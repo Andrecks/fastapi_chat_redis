@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat</title>
+    <style>
+        #chatbox {
+            width: 500px;
+            height: 500px;
+            border: 1px solid black;
+            overflow-y: scroll;
+        }
+
+        #message {
+            width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat</h1>
+    <div>
+        <h3>Online Members:</h3>
+        <ul id="memberList">
+            <!-- Initial online members from the server will be injected here by Jinja2 -->
+            {% for member in members %}
+                <li>{{ member }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <br>
+    <div id="chatbox">
+        <!-- Initial messages from the server will be injected here by Jinja2 -->
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    <br>
+    <input type="text" id="message" placeholder="Type your message...">
+    <button id="sendButton">Send</button>
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="uploadButton">Upload</button>
+    <script>
+        
+        let socket = null;
+
+        function connect() {
+            socket = new WebSocket(`ws://localhost:8000/ws?username={{username}}`);
+
+            socket.onopen = function(e) {
+                console.log("[open] Connection established");
+            };
+
+            socket.onmessage = function(event) {
+                console.log(`[message] Data received from server: ${event.data}`);
+                const chatbox = document.getElementById('chatbox');
+                const message = JSON.parse(event.data);
+                if (message.type === 'text') {
+                  chatbox.innerHTML += `<p>${message.data}</p>`;
+                } else if (message.type === 'image') {
+                  const imageUrl = URL.createObjectURL(message.data);
+                  chatbox.innerHTML += `<img src="${imageUrl}" alt="User Image" width="200">`;
+                }
+                chatbox.scrollTop = chatbox.scrollHeight;
+              };
+              
+
+
+            socket.onclose = function(event) {
+                if (event.wasClean) {
+                    console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    // e.g. server process killed or network down event.code is usually 1006 in this case
+                    console.log('[close] Connection died');
+                }
+                console.log('WebSocket connection closed. Reconnecting...');
+                setTimeout(connect, 1000);
+            };
+
+            socket.onerror = function(error) {
+                console.log(`[error] ${error.message}`);
+            };
+        }
+
+        connect();
+
+        // Close WebSocket when window is unloaded
+        window.onunload = window.onbeforeunload = function() {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+        };
+
+        // Send message
+        const messageBox = document.getElementById('message');
+        document.getElementById('sendButton').addEventListener('click', sendMessage);
+        messageBox.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+                event.preventDefault();  // Prevent form submission
+            }
+        });
+
+        function sendMessage() {
+            socket.send(messageBox.value);
+            messageBox.value = '';
+        }
+
+        const uploadButton = document.getElementById('uploadButton');
+        uploadButton.addEventListener('click', uploadImage);
+
+        function uploadImage() {
+            const imageInput = document.getElementById('imageInput');
+            const file = imageInput.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                const imageData = e.target.result;
+                const blob = base64ToBlob(imageData);
+                const message = {
+                  type: 'image',
+                  data: blob,
+                };
+                socket.send(JSON.stringify(message));
+              };
+              reader.readAsDataURL(file);
+            }
+          }
+
+          function base64ToBlob(base64) {
+            const parts = base64.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const rawLength = raw.length;
+            const uInt8Array = new Uint8Array(rawLength);
+            for (let i = 0; i < rawLength; ++i) {
+              uInt8Array[i] = raw.charCodeAt(i);
+            }
+            return new Blob([uInt8Array], { type: contentType });
+          }
+    </script>
+</body>
+</html>
