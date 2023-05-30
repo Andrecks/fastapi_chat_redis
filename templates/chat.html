@@ -1,32 +1,66 @@
+<!DOCTYPE html>
 <html>
-    <head>
-        <title>Chat</title>
-    </head>
-    <body>
-        <h1>WebSocket Chat</h1>
-        <form action="" onsubmit="sendMessage(event)">
-            <input type="text" id="messageText" autocomplete="off"/>
-            <button>Send</button>
-        </form>
-        <ul id='messages'>
+<head>
+    <title>Chat</title>
+    <style>
+        #chatbox {
+            width: 500px;
+            height: 500px;
+            border: 1px solid black;
+            overflow-y: scroll;
+        }
+    
+        #chatbox img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    
+        #message {
+            width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat</h1>
+    <div>
+        <h3>Online Members:</h3>
+        <ul id="memberList">
+            <!-- Initial online members from the server will be injected here by Jinja2 -->
+            {% for member in members %}
+                <li>{{ member }}</li>
+            {% endfor %}
         </ul>
-        <script>
-            var myCookies = getCookies();
-            console.log('nickname cokie value = ', myCookies.nickname)
-            var ws = new WebSocket("ws://localhost:8000/ws");
-            ws.onmessage = function(event) {
-                var messages = document.getElementById('messages')
-                var message = document.createElement('li')
-                var content = document.createTextNode(event.data)
-                message.appendChild(content)
-                messages.appendChild(message)
-            };
-            function sendMessage(event) {
-                var input = document.getElementById("messageText")
-                ws.send(input.value)
-                input.value = ''
-                event.preventDefault()
-            }
-        </script>
-    </body>
+    </div>
+    <br>
+    <div id="chatbox">
+        {% for message in messages %}
+        {% if message.startswith('img64:') %}
+            {% set parts = message.split(':') %}
+            {% set username = parts[1] %}
+            {% set base64 = parts[2:] | join(':') %}
+            <div class="chat-message">
+                <p>{{ username }}</p>
+                <img src="data:image/png;base64,{{ base64 }}" />
+            </div>
+        {% else %}
+            <p>{{ message }}</p>
+        {% endif %}
+    {% endfor %}
+    </div>
+    <script src="/static/base64_render.js"></script>
+    <br>
+    <input type="text" id="message" placeholder="Type your message...">
+    <button id="sendButton">Send</button>
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="uploadButton">Upload</button>
+
+    <script src="/static/get_nickname.js"></script>
+
+    <script src="/static/new_webbsocket.js"></script>
+
+    <script src="/static/send_message.js"></script>
+
+    <script src="/static/image_upload.js"></script>
+</body>
 </html>

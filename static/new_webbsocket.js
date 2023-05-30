@@ -19,23 +19,25 @@ socket.onmessage = function(event) {
             listItem.textContent = username;
             memberList.appendChild(listItem);
         });
-    } else if (event.data.split(':')[1].startsWith('base64')) {
-        const username = event.data.split(':')[0];
-        const base64 = event.data.split(',')[1];
-        const usernameElement = document.createElement('p');
-        usernameElement.textContent = username;
-        newMessage.appendChild(usernameElement);
-        const imageElement = document.createElement('img');
-        imageElement.src = `data:image/png;base64,${base64}`;
-        newMessage.appendChild(imageElement);
     } else {
-        const textElement = document.createElement('p');
-        textElement.textContent = event.data;
-        newMessage.appendChild(textElement);
+        if (event.data.split(':')[1].startsWith('base64')) {
+            const username = event.data.split(':')[0];
+            const base64 = event.data.split(',')[1];
+            const usernameElement = document.createElement('p');
+            usernameElement.textContent = username;
+            newMessage.appendChild(usernameElement);
+            const imageElement = document.createElement('img');
+            imageElement.src = `data:image/png;base64,${base64}`;
+            newMessage.appendChild(imageElement);
+        } else {
+            const textElement = document.createElement('p');
+            textElement.textContent = event.data;
+            newMessage.appendChild(textElement);
+        }
+        
+        chatbox.appendChild(newMessage);
+        chatbox.scrollTop = chatbox.scrollHeight;
     }
-    
-    chatbox.appendChild(newMessage);
-    chatbox.scrollTop = chatbox.scrollHeight;
     // Handle incoming messages from the server
     // You can update the chatbox or perform other actions here
 };

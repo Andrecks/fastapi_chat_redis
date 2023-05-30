@@ -1,9 +1,10 @@
 from fastapi import WebSocket
 from typing import List
+import os
 import redis
 
 
-r = redis.Redis(host='localhost', port=6379, db=0)
+r = redis.Redis(os.getenv('REDIS_HOST'), port=6379, db=0)
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -22,8 +23,9 @@ class ConnectionManager:
 
     async def send_message(self, message: str):
         # Save the message to Redis
-        r.lpush("chat", message)
-        r.ltrim("chat", 0, 9)  # Trim the list to store only the last 10 messages
+        if not(message.startswith('user_list:')):
+            r.lpush("chat", message)
+            r.ltrim("chat", 0, 9)  # Trim the list to store only the last 10 messages
 
         # Send the message to all connected clients
         for connection in self.active_connections:
