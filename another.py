@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Form, status, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
+import uvicorn
 from fastapi.templating import Jinja2Templates
 from typing import List
 import redis
@@ -61,7 +62,7 @@ manager = ConnectionManager()
 #     response.set_cookie(key="username", value=username)
 #     return response
 
-@app.get("/chat")
+@app.get("/")
 async def get_chat(request: Request):
     username = request.cookies.get("username")
     messages_bytes = r.lrange("chat", 0, -1)[::-1]
@@ -70,8 +71,13 @@ async def get_chat(request: Request):
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    username = websocket.query_params.get('username')
+    username = websocket.cookies.get('username')
     await websocket.accept()
+    manager.connect(websocket)
     while True:
         data = await websocket.receive_text()
-        await websocket.send_text(f"{username}: {data}")
+        await manager.send_message(f"{username}: {data}")
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

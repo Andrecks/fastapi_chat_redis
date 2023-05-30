@@ -30,7 +30,10 @@
     <div id="chatbox">
         <!-- Initial messages from the server will be injected here by Jinja2 -->
         {% for message in messages %}
-            <p>{{ message }}</p>
+            {% if message.data is defined %}
+                <img src="data:image/png;base64, {{ message.data[1] }}" alt="Image">
+            {% else %}
+                <p>{{ message }}</p>
         {% endfor %}
     </div>
     <br>
