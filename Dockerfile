@@ -5,7 +5,7 @@ FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9
 RUN pip install redis
 
 # Copy the FastAPI application code into the container
-COPY ./app /app
+COPY . /app
 
 # Set the working directory
 WORKDIR /app
